@@ -1,0 +1,40 @@
+name: Build Debug APK
+
+on:
+  push:
+    branches:
+      - debug
+
+jobs:
+  build:
+    name: Build APK with Dynamic Version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: 17
+
+      - name: Grant execute permission to gradlew
+        run: chmod +x ./gradlew
+
+      - name: Extract version name from build.gradle
+        id: version
+        run: |
+          VERSION_NAME=$(grep versionName app/build.gradle | awk '{ print $2 }' | tr -d '"')
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: debug-v${{ steps.version.outputs.version_name }}
+          path: app/build/outputs/apk/debug/app-debug.apk
